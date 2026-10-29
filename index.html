@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Deduction Room — Investigation Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- TOP HEADER HUD -->
+    <header class="hud-header">
+        <div class="brand">
+            <span class="badge">CASE FILE</span>
+            <h1>The Deduction Room</h1>
+        </div>
+
+        <div class="hud-metrics">
+            <div class="metric-box">
+                <span class="label">SELECT CASE</span>
+                <select id="case-select" class="case-dropdown"></select>
+            </div>
+            <div class="metric-box">
+                <span class="label">SCORE</span>
+                <span class="value score-val" id="score-display">1000</span>
+            </div>
+            <div class="metric-box">
+                <span class="label">CLUES</span>
+                <span class="value" id="clues-ratio-display">2 / 7</span>
+            </div>
+            <!-- Inside <div class="hud-actions"> in index.html -->
+            <div class="hud-actions">
+                <button id="sound-toggle" class="btn-icon" aria-label="Toggle Audio" title="Toggle Sound">🔊</button>
+                <button id="reset-case-btn" class="btn-secondary btn-sm">Reset Case</button>
+                <button id="clear-data-btn" class="btn-danger btn-sm" title="Clear all saved progress">Clear
+                    Data</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="workspace">
+
+        <!-- LEFT PANEL: CASE BRIEF, BADGES & JOURNAL -->
+        <aside class="panel left-panel">
+            <section class="card dossier-card">
+                <div class="card-header">
+                    <h2>Case Dossier</h2>
+                    <span class="tag difficulty-tag" id="difficulty-badge">Medium</span>
+                </div>
+                <h3 id="case-title" class="case-title">Loading Case...</h3>
+                <p id="case-description" class="case-desc"></p>
+
+                <div class="case-rules-box">
+                    <h4>Rules</h4>
+                    <ul>
+                        <li>3 Suspects were in the laboratory.</li>
+                        <li><strong>Exactly ONE statement</strong> is a lie.</li>
+                        <li>2 Clues unlocked. Extra clues cost <strong>-100 pts</strong>.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- BADGES & CAREER RECORD CARD -->
+            <section class="card career-card">
+                <div class="card-header">
+                    <h2>Detective Record</h2>
+                    <span class="save-status" id="best-score-display">Best: --</span>
+                </div>
+                <div class="career-stats">
+                    <div class="stars-display" id="case-stars-display">☆☆☆</div>
+                    <div class="highest-rank" id="career-rank-display">Rank: Junior Novice</div>
+                </div>
+            </section>
+
+            <section class="card notebook-card">
+                <div class="card-header">
+                    <h2>Detective Notes</h2>
+                    <span class="save-status" id="notebook-status">Autosaved</span>
+                </div>
+                <textarea id="detective-notes"
+                    placeholder="Write down timeline contradictions, suspect motives, and working theories..."></textarea>
+            </section>
+        </aside>
+
+        <!-- CENTER PANEL: EVIDENCE BOARD -->
+        <section class="panel center-panel">
+            <div class="corkboard-container" id="corkboard">
+                <div class="corkboard-header">
+                    <h2>Evidence Board</h2>
+                    <p class="subtext">Select an unlocked clue, then select a suspect profile to draw a connection.</p>
+                </div>
+
+                <canvas id="string-canvas"></canvas>
+                <div class="clues-grid" id="clues-grid"></div>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: SUSPECTS & SUBMISSION -->
+        <aside class="panel right-panel">
+            <section class="card suspects-card">
+                <div class="card-header">
+                    <h2>Suspect Profiles</h2>
+                </div>
+                <div class="suspects-list" id="suspects-list"></div>
+            </section>
+
+            <button id="deduce-btn" class="btn-primary action-btn">
+                Submit Final Deduction
+            </button>
+        </aside>
+    </main>
+
+    <!-- ACCUSATION MODAL -->
+    <div class="modal-backdrop hidden" id="accusation-modal">
+        <div class="modal-card">
+            <button class="modal-close" id="close-modal-btn" aria-label="Close modal">&times;</button>
+            <h2>Final Deduction</h2>
+            <p class="modal-subtext">Review the evidence carefully before submitting your verdict.</p>
+
+            <form id="deduction-form">
+                <div class="form-group">
+                    <label for="culprit-select">1. Who stole the missing item?</label>
+                    <select id="culprit-select" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="false-statement-select">2. Which suspect's statement is FALSE?</label>
+                    <select id="false-statement-select" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="smoking-gun-select">3. What is the SMOKING GUN clue?</label>
+                    <select id="smoking-gun-select" required></select>
+                </div>
+
+                <button type="submit" class="btn-primary full-width">Submit Verdict</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- RESULT / VERDICT MODAL -->
+    <div class="modal-backdrop hidden" id="result-modal">
+        <div class="modal-card result-card">
+            <div id="result-icon" class="result-badge"></div>
+            <h2 id="result-title">Verdict Delivered</h2>
+            <p id="result-message" class="result-body"></p>
+
+            <div class="breakdown-box">
+                <div class="breakdown-row">
+                    <span>Base Points:</span>
+                    <span id="base-score-val">1000</span>
+                </div>
+                <div class="breakdown-row penalty">
+                    <span>Clue Penalty:</span>
+                    <span id="penalty-score-val">-0</span>
+                </div>
+                <div class="breakdown-row total">
+                    <span>Final Score:</span>
+                    <span id="final-score-val">1000</span>
+                </div>
+            </div>
+
+            <div class="rank-box">
+                <span>Awarded Rating:</span>
+                <div id="stars-awarded" class="modal-stars">★★★</div>
+                <span>Detective Rank:</span>
+                <h3 id="detective-rank-display">Senior Inspector</h3>
+            </div>
+
+            <button id="play-again-btn" class="btn-primary full-width">Re-examine Case</button>
+        </div>
+    </div>
+
+    <script src="js/cases.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
